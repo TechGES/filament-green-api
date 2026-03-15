@@ -17,7 +17,13 @@ php artisan vendor:publish --tag="filament-green-api-config"
 If you have not already installed the base Green API package, run its installer:
 
 ```bash
-php artisan laravel-green-api:install
+php artisan green-api:install
+```
+
+Publish Filament assets so the plugin stylesheet is available in your panel:
+
+```bash
+php artisan filament:assets
 ```
 
 If you prefer publishing manually, use the dependency package tags:

@@ -23,6 +23,7 @@ class GreenApiServiceProvider extends PackageServiceProvider
                         $command->newLine();
                         $command->warn('This plugin depends on ges/laravel-green-api.');
                         $command->line('Run <fg=yellow>php artisan laravel-green-api:install</> to publish the base package config and migrations.');
+                        $command->line('Run <fg=yellow>php artisan filament:assets</> after installation or upgrades to publish the plugin styles.');
                         $command->line('Update <fg=yellow>green_api.contact_model</> and <fg=yellow>green_api.contact_phone_attribute</> before opening the inbox if your contacts do not use the default User/phone setup.');
                     });
             });

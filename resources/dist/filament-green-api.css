@@ -1,0 +1,556 @@
+.ga-plugin {
+    --ga-border: #dbe4ee;
+    --ga-border-strong: #c4d1dd;
+    --ga-surface: #ffffff;
+    --ga-surface-soft: #f5f8fb;
+    --ga-surface-dark: #08111f;
+    --ga-surface-dark-strong: #0f1a2b;
+    --ga-text: #0f172a;
+    --ga-text-soft: #526277;
+    --ga-text-muted: #8493a7;
+    --ga-success: #10b981;
+    --ga-success-strong: #059669;
+    --ga-danger: #dc2626;
+    color: var(--ga-text);
+}
+
+.ga-plugin * {
+    box-sizing: border-box;
+}
+
+.ga-settings-layout,
+.ga-inbox-layout {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.ga-settings-form,
+.ga-stack,
+.ga-thread-form-fields {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.ga-settings-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.ga-card,
+.ga-sidebar,
+.ga-thread {
+    border: 1px solid var(--ga-border);
+    border-radius: 1.5rem;
+    overflow: hidden;
+}
+
+.ga-card,
+.ga-sidebar {
+    background: var(--ga-surface);
+    box-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.35);
+}
+
+.ga-card {
+    padding: 1.5rem;
+}
+
+.ga-card-dark,
+.ga-thread {
+    background:
+        radial-gradient(circle at top, rgba(16, 185, 129, 0.16), transparent 42%),
+        linear-gradient(180deg, #08111f 0%, #111c2d 100%);
+    color: #f8fafc;
+}
+
+.ga-card-eyebrow {
+    margin: 0;
+    color: var(--ga-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.ga-card-eyebrow-dark {
+    color: #a7f3d0;
+}
+
+.ga-card-list {
+    display: grid;
+    gap: 1rem;
+    margin: 1.25rem 0 0;
+}
+
+.ga-card-list-item {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.ga-card-label {
+    color: var(--ga-text-muted);
+    font-size: 0.75rem;
+}
+
+.ga-card-value {
+    margin: 0;
+    color: var(--ga-text-soft);
+    font-size: 0.9375rem;
+}
+
+.ga-card-value-lg {
+    color: var(--ga-text);
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.ga-card-muted {
+    color: var(--ga-text-muted);
+}
+
+.ga-card-url {
+    margin: 1rem 0 0;
+    overflow-wrap: anywhere;
+    font-size: clamp(1.125rem, 1rem + 0.55vw, 1.75rem);
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.ga-card-help {
+    margin: 0.75rem 0 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+}
+
+.ga-card-help-dark {
+    color: rgba(236, 253, 245, 0.82);
+}
+
+.ga-sidebar {
+    min-height: 70vh;
+}
+
+.ga-sidebar-search,
+.ga-thread-header,
+.ga-thread-form {
+    border-bottom: 1px solid var(--ga-border);
+}
+
+.ga-sidebar-search,
+.ga-thread-header,
+.ga-thread-form {
+    background: var(--ga-surface);
+}
+
+.ga-sidebar-search,
+.ga-thread-form {
+    padding: 1rem;
+}
+
+.ga-search-input,
+.ga-thread-textarea {
+    width: 100%;
+    border: 1px solid var(--ga-border);
+    border-radius: 1rem;
+    background: var(--ga-surface-soft);
+    color: var(--ga-text);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.ga-search-input {
+    padding: 0.85rem 1rem;
+}
+
+.ga-thread-textarea {
+    min-height: 5.75rem;
+    padding: 0.95rem 1rem;
+    resize: vertical;
+}
+
+.ga-search-input:focus,
+.ga-thread-textarea:focus {
+    outline: none;
+    border-color: rgba(16, 185, 129, 0.9);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+    background: #fff;
+}
+
+.ga-contact-list,
+.ga-thread-body {
+    overflow-y: auto;
+}
+
+.ga-contact-list {
+    max-height: 70vh;
+}
+
+.ga-contact-button {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 0;
+    border-bottom: 1px solid #edf2f7;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 150ms ease;
+}
+
+.ga-contact-button:hover,
+.ga-contact-button:focus-visible {
+    background: #f8fafc;
+    outline: none;
+}
+
+.ga-contact-button.is-active {
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.ga-contact-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    border-radius: 1rem;
+    background: #0f172a;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.ga-contact-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.ga-contact-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.ga-contact-name,
+.ga-contact-phone,
+.ga-contact-preview {
+    margin: 0;
+}
+
+.ga-contact-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ga-text);
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+
+.ga-contact-phone,
+.ga-contact-time {
+    color: var(--ga-text-muted);
+    font-size: 0.75rem;
+}
+
+.ga-contact-time {
+    flex-shrink: 0;
+}
+
+.ga-contact-preview {
+    margin-top: 0.5rem;
+    overflow: hidden;
+    color: var(--ga-text-soft);
+    font-size: 0.875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ga-contact-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    margin-top: 0.125rem;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    background: var(--ga-success);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.ga-thread {
+    display: flex;
+    min-width: 0;
+    min-height: 70vh;
+    flex-direction: column;
+}
+
+.ga-thread-header {
+    padding: 1.25rem 1.5rem;
+}
+
+.ga-thread-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.ga-thread-title,
+.ga-thread-subtitle,
+.ga-thread-state-label,
+.ga-thread-state-value {
+    margin: 0;
+}
+
+.ga-thread-title {
+    color: var(--ga-text);
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.ga-thread-subtitle,
+.ga-thread-state-label {
+    color: var(--ga-text-muted);
+    font-size: 0.875rem;
+}
+
+.ga-thread-state {
+    text-align: right;
+}
+
+.ga-thread-state-value {
+    color: var(--ga-text);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.ga-thread-body {
+    flex: 1;
+    padding: 1.5rem;
+}
+
+.ga-message-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.ga-message-row {
+    display: flex;
+}
+
+.ga-message-row-incoming {
+    justify-content: flex-start;
+}
+
+.ga-message-row-outgoing {
+    justify-content: flex-end;
+}
+
+.ga-message-bubble {
+    max-width: min(42rem, 100%);
+    padding: 0.95rem 1rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 18px 40px -30px rgba(15, 23, 42, 0.5);
+}
+
+.ga-message-bubble-incoming {
+    background: #fff;
+    color: var(--ga-text);
+}
+
+.ga-message-bubble-outgoing {
+    background: linear-gradient(135deg, var(--ga-success) 0%, var(--ga-success-strong) 100%);
+    color: #fff;
+}
+
+.ga-message-text,
+.ga-message-caption {
+    margin: 0;
+    white-space: pre-wrap;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+}
+
+.ga-message-caption {
+    margin-top: 0.5rem;
+}
+
+.ga-message-caption-muted {
+    opacity: 0.82;
+}
+
+.ga-message-file {
+    margin-top: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 1rem;
+    background: rgba(15, 23, 42, 0.05);
+    font-size: 0.875rem;
+}
+
+.ga-message-file-name,
+.ga-message-file-link {
+    margin: 0;
+}
+
+.ga-message-file-name {
+    font-weight: 600;
+}
+
+.ga-message-file-link {
+    display: inline-block;
+    margin-top: 0.35rem;
+    color: inherit;
+    font-size: 0.75rem;
+    text-decoration: underline;
+}
+
+.ga-message-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.6875rem;
+}
+
+.ga-message-meta-incoming {
+    color: #8493a7;
+}
+
+.ga-message-meta-outgoing {
+    color: rgba(236, 253, 245, 0.84);
+}
+
+.ga-thread-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.ga-thread-attachments {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.ga-attachment-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--ga-border);
+    border-radius: 1rem;
+    background: #fff;
+    color: #334155;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
+}
+
+.ga-attachment-button:hover,
+.ga-attachment-button:focus-within {
+    border-color: rgba(16, 185, 129, 0.9);
+    color: var(--ga-success-strong);
+    background: #f8fffc;
+}
+
+.ga-attachment-input {
+    display: none;
+}
+
+.ga-attachment-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--ga-text-muted);
+    font-size: 0.875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ga-empty-state,
+.ga-thread-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+    padding: 2rem;
+    text-align: center;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+}
+
+.ga-empty-state {
+    min-height: auto;
+}
+
+.ga-empty-state-light {
+    color: var(--ga-text-soft);
+}
+
+.ga-empty-state-dark,
+.ga-thread-empty {
+    color: rgba(255, 255, 255, 0.76);
+}
+
+.ga-empty-state-dark {
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.ga-error-text {
+    margin: 0;
+    color: var(--ga-danger);
+    font-size: 0.875rem;
+}
+
+@media (min-width: 1024px) {
+    .ga-inbox-layout {
+        grid-template-columns: minmax(18rem, 20rem) minmax(0, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .ga-settings-layout {
+        grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
+    }
+
+    .ga-inbox-layout {
+        grid-template-columns: minmax(20rem, 21rem) minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .ga-card,
+    .ga-sidebar-search,
+    .ga-thread-header,
+    .ga-thread-form,
+    .ga-thread-body {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .ga-thread-header-content {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .ga-thread-state {
+        text-align: left;
+    }
+}
