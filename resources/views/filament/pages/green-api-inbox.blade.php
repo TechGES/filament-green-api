@@ -1,8 +1,7 @@
 <x-filament-panels::page>
-    @php($contacts = $this->contacts())
+    @php($conversations = $this->conversations())
     @php($activeContact = $this->activeContact())
-    @php($activeConversation = $this->activeConversation())
-    @php($messages = $this->messages())
+    @php($messages = $this->threadMessages())
     @php($config = $this->currentConfig())
 
     <div class="ga-plugin ga-inbox-layout">
@@ -13,16 +12,17 @@
                     id="green-api-contact-search"
                     type="text"
                     wire:model.live.debounce.300ms="search"
-                    placeholder="Rechercher un contact"
+                    placeholder="Rechercher une conversation"
                     class="ga-search-input"
                 />
             </div>
 
             <div class="ga-contact-list">
-                @forelse ($contacts as $contact)
-                    @php($conversation = $contact->greenApiConversation)
+                @forelse ($conversations as $conversation)
+                    @php($contact = $conversation->contact)
+                    @continue($contact === null)
                     <button
-                        wire:key="green-api-contact-{{ $contact->getKey() }}"
+                        wire:key="green-api-conversation-{{ $conversation->id }}"
                         type="button"
                         wire:click="selectContact('{{ $contact->getKey() }}')"
                         class="ga-contact-button {{ $this->contactIsActive($contact) ? 'is-active' : '' }}"
@@ -54,9 +54,17 @@
                     </button>
                 @empty
                     <div class="ga-empty-state ga-empty-state-light">
-                        Aucun contact avec numero de telephone.
+                        Aucune conversation trouvee.
                     </div>
                 @endforelse
+
+                @if ($this->hasMoreConversations())
+                    <div class="ga-sidebar-footer">
+                        <button type="button" wire:click="loadMoreConversations" class="ga-load-more-button">
+                            Charger plus
+                        </button>
+                    </div>
+                @endif
             </div>
         </aside>
 
@@ -68,15 +76,72 @@
                             <h2 class="ga-thread-title">{{ $this->contactLabel($activeContact) }}</h2>
                             <p class="ga-thread-subtitle">{{ $this->contactPhone($activeContact) }}</p>
                         </div>
-                        <div class="ga-thread-state">
-                            <p class="ga-thread-state-label">Etat instance</p>
-                            <p class="ga-thread-state-value">{{ $config->instance_state ?: 'Inconnu' }}</p>
+                        <div class="ga-thread-tools">
+                            <div class="ga-thread-search">
+                                <label class="sr-only" for="green-api-message-search">Recherche conversation</label>
+                                <input
+                                    id="green-api-message-search"
+                                    type="text"
+                                    wire:model.live.debounce.300ms="messageSearch"
+                                    placeholder="Rechercher dans la conversation"
+                                    class="ga-search-input"
+                                />
+                            </div>
+                            <div class="ga-thread-state">
+                                <p class="ga-thread-state-label">Etat instance</p>
+                                <p class="ga-thread-state-value">{{ $config->instance_state ?: 'Inconnu' }}</p>
+                            </div>
                         </div>
                     </div>
                 </header>
 
-                <div wire:poll.10s="refreshThread" class="ga-thread-body">
-                    <div class="ga-message-list">
+                <div
+                    wire:key="green-api-thread-pane-{{ $activeContact->getKey() }}-{{ md5($messageSearch) }}"
+                    x-data="{
+                        loadingOlder: false,
+                        scrollToBottom() {
+                            const body = this.$refs.threadBody;
+                            body.scrollTop = body.scrollHeight;
+                        },
+                        async loadOlderMessages() {
+                            if (this.loadingOlder || this.$refs.threadBody.scrollTop > 120) {
+                                return;
+                            }
+
+                            this.loadingOlder = true;
+
+                            const body = this.$refs.threadBody;
+                            const offsetFromBottom = body.scrollHeight - body.scrollTop;
+
+                            try {
+                                await $wire.loadOlderMessages();
+                            } finally {
+                                this.$nextTick(() => {
+                                    body.scrollTop = Math.max(body.scrollHeight - offsetFromBottom, 0);
+                                    this.loadingOlder = false;
+                                });
+                            }
+                        },
+                        init() {
+                            this.$nextTick(() => this.scrollToBottom());
+                        },
+                    }"
+                    class="ga-thread-shell"
+                >
+                    <div wire:poll.10s="refreshThread" class="ga-thread-body" x-ref="threadBody" x-on:scroll.passive="loadOlderMessages">
+                        @if ($this->hasMoreMessages())
+                            <div class="ga-thread-loader" x-show="loadingOlder" x-cloak>
+                                Chargement des messages plus anciens...
+                            </div>
+                        @endif
+
+                        @if ($messageSearch !== '')
+                            <div class="ga-thread-search-state">
+                                Resultats pour "{{ $messageSearch }}"
+                            </div>
+                        @endif
+
+                        <div class="ga-message-list">
                         @forelse ($messages as $message)
                             @php($incoming = $message->direction === 'incoming')
                             <div wire:key="green-api-message-{{ $message->id }}" class="ga-message-row {{ $incoming ? 'ga-message-row-incoming' : 'ga-message-row-outgoing' }}">
@@ -113,6 +178,7 @@
                                 Aucun message pour ce contact. Envoyez le premier message depuis cette page.
                             </div>
                         @endforelse
+                        </div>
                     </div>
                 </div>
 

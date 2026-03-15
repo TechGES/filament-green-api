@@ -8,10 +8,13 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Ges\LaravelGreenApi\Models\GreenApiConfig;
 use Ges\LaravelGreenApi\Models\GreenApiConversation;
+use Ges\LaravelGreenApi\Models\GreenApiMessage;
 use Ges\LaravelGreenApi\Services\GreenApiInboxService;
 use Ges\LaravelGreenApi\Support\GreenApiContactManager;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 
@@ -33,9 +36,17 @@ class GreenApiInbox extends Page
 
     public string $search = '';
 
+    public string $messageSearch = '';
+
     public string $messageBody = '';
 
     public ?TemporaryUploadedFile $attachment = null;
+
+    public int $conversationLimit = 25;
+
+    public int $messageChunkSize = 30;
+
+    public int $messageLimit = 30;
 
     public static function canAccess(): bool
     {
@@ -54,10 +65,10 @@ class GreenApiInbox extends Page
         return $user->can($ability);
     }
 
-    public function mount(GreenApiInboxService $greenApiInboxService): void
+    public function mount(): void
     {
-        $firstContact = $greenApiInboxService->contacts()->first();
-        $this->activeContactId = $firstContact?->getKey();
+        $this->messageLimit = $this->messageChunkSize;
+        $this->activeContactId = $this->initialConversation()?->contact_id;
     }
 
     protected function getHeaderActions(): array
@@ -71,13 +82,17 @@ class GreenApiInbox extends Page
                         ->label('Contact')
                         ->searchable()
                         ->required()
-                        ->options(app(GreenApiContactManager::class)->options()),
+                        ->placeholder('Rechercher un contact')
+                        ->searchPrompt('Saisissez un nom, email ou numero')
+                        ->noSearchResultsMessage('Aucun contact trouve')
+                        ->getSearchResultsUsing(fn (string $search): array => $this->newConversationContactOptions($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => $this->newConversationContactLabel($value)),
                 ])
                 ->action(function (array $data): void {
                     $contact = app(GreenApiContactManager::class)->findOrFail($data['contact_id']);
 
                     app(GreenApiInboxService::class)->ensureConversationForContact($contact);
-                    $this->activeContactId = $contact->getKey();
+                    $this->activateContact($contact->getKey());
 
                     Notification::make()
                         ->title('Conversation prete')
@@ -95,8 +110,22 @@ class GreenApiInbox extends Page
 
     public function selectContact(int|string $contactId): void
     {
-        $this->activeContactId = $contactId;
+        $this->activateContact($contactId);
         $this->markConversationAsRead();
+    }
+
+    public function loadMoreConversations(): void
+    {
+        $this->conversationLimit += 25;
+    }
+
+    public function loadOlderMessages(): void
+    {
+        if (! $this->hasMoreMessages()) {
+            return;
+        }
+
+        $this->messageLimit += $this->messageChunkSize;
     }
 
     public function send(): void
@@ -153,6 +182,16 @@ class GreenApiInbox extends Page
 
     public function refreshThread(): void {}
 
+    public function updatedSearch(): void
+    {
+        $this->conversationLimit = 25;
+    }
+
+    public function updatedMessageSearch(): void
+    {
+        $this->messageLimit = $this->messageChunkSize;
+    }
+
     public function markConversationAsRead(): void
     {
         $conversation = $this->activeConversation();
@@ -165,25 +204,34 @@ class GreenApiInbox extends Page
     }
 
     /**
-     * @return Collection<int, Model>
+     * @return Collection<int, GreenApiConversation>
      */
-    public function contacts(): Collection
+    public function conversations(): Collection
     {
-        return app(GreenApiInboxService::class)->contacts($this->search);
+        $query = $this->conversationQuery();
+
+        return $query
+            ->limit($this->conversationLimit)
+            ->get()
+            ->filter(fn (GreenApiConversation $conversation): bool => $conversation->contact !== null)
+            ->values();
     }
 
     public function activeContact(): ?Model
+    {
+        return $this->activeConversation()?->contact;
+    }
+
+    public function activeConversation(): ?GreenApiConversation
     {
         if ($this->activeContactId === null) {
             return null;
         }
 
-        return app(GreenApiInboxService::class)->contact($this->activeContactId);
-    }
-
-    public function activeConversation(): ?GreenApiConversation
-    {
-        return $this->activeContact()?->greenApiConversation;
+        return GreenApiConversation::query()
+            ->with('contact')
+            ->where('contact_id', (string) $this->activeContactId)
+            ->first();
     }
 
     public function currentConfig(): GreenApiConfig
@@ -211,8 +259,181 @@ class GreenApiInbox extends Page
         return (string) $contact->getKey() === (string) $this->activeContactId;
     }
 
-    public function messages(): Collection
+    /**
+     * @return Collection<int, GreenApiMessage>
+     */
+    public function threadMessages(): Collection
     {
-        return $this->activeConversation()?->messages ?? collect();
+        $query = $this->messageQuery();
+
+        if ($query === null) {
+            return collect();
+        }
+
+        return $query
+            ->orderByDesc('sent_at')
+            ->orderByDesc('created_at')
+            ->limit($this->messageLimit)
+            ->get()
+            ->reverse()
+            ->values();
+    }
+
+    public function hasMoreConversations(): bool
+    {
+        return $this->conversationQuery()->count() > $this->conversationLimit;
+    }
+
+    public function hasMoreMessages(): bool
+    {
+        $query = $this->messageQuery();
+
+        return $query !== null && $query->count() > $this->messageLimit;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function newConversationContactOptions(string $search): array
+    {
+        $search = trim($search);
+
+        if ($search === '') {
+            return [];
+        }
+
+        $manager = app(GreenApiContactManager::class);
+        $modelClass = $manager->modelClass();
+        $phoneAttribute = $manager->phoneAttribute();
+        $searchAttributes = $manager->searchAttributes();
+        $searchAttributes = $searchAttributes !== [] ? $searchAttributes : [$phoneAttribute];
+        $digitsNeedle = preg_replace('/\D+/', '', $search) ?: '';
+
+        return $modelClass::query()
+            ->whereNotNull($phoneAttribute)
+            ->where(function (Builder $query) use ($digitsNeedle, $phoneAttribute, $search, $searchAttributes): void {
+                foreach ($searchAttributes as $index => $attribute) {
+                    if ($index === 0) {
+                        $query->where($attribute, 'like', '%'.$search.'%');
+
+                        continue;
+                    }
+
+                    $query->orWhere($attribute, 'like', '%'.$search.'%');
+                }
+
+                if ($digitsNeedle !== '') {
+                    $query->orWhere($phoneAttribute, 'like', '%'.$digitsNeedle.'%');
+                }
+            })
+            ->limit(50)
+            ->get()
+            ->sortBy(fn (Model $contact): string => Str::lower($this->contactLabel($contact)))
+            ->mapWithKeys(fn (Model $contact): array => [
+                (string) $contact->getKey() => "{$this->contactLabel($contact)} ({$this->contactPhone($contact)})",
+            ])
+            ->all();
+    }
+
+    public function newConversationContactLabel(mixed $value): ?string
+    {
+        if (! is_scalar($value) || (string) $value === '') {
+            return null;
+        }
+
+        $contact = app(GreenApiContactManager::class)->find((string) $value);
+
+        if ($contact === null) {
+            return null;
+        }
+
+        return "{$this->contactLabel($contact)} ({$this->contactPhone($contact)})";
+    }
+
+    private function activateContact(int|string $contactId): void
+    {
+        $this->activeContactId = $contactId;
+        $this->messageSearch = '';
+        $this->messageLimit = $this->messageChunkSize;
+    }
+
+    private function initialConversation(): ?GreenApiConversation
+    {
+        return GreenApiConversation::query()
+            ->with('contact')
+            ->whereNotNull('contact_id')
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('updated_at')
+            ->first();
+    }
+
+    private function conversationQuery(): Builder
+    {
+        $manager = app(GreenApiContactManager::class);
+        $phoneAttribute = $manager->phoneAttribute();
+        $searchAttributes = $manager->searchAttributes();
+        $searchAttributes = $searchAttributes !== [] ? $searchAttributes : [$phoneAttribute];
+        $needle = trim($this->search);
+        $digitsNeedle = preg_replace('/\D+/', '', $needle) ?: '';
+
+        $query = GreenApiConversation::query()
+            ->with('contact')
+            ->whereNotNull('contact_id')
+            ->whereHas('contact', fn (Builder $query): Builder => $query->whereNotNull($phoneAttribute))
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('updated_at');
+
+        if ($needle === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($digitsNeedle, $needle, $phoneAttribute, $searchAttributes): void {
+            $query->where('last_message_preview', 'like', '%'.$needle.'%')
+                ->orWhere('phone', 'like', '%'.$needle.'%');
+
+            if ($digitsNeedle !== '') {
+                $query->orWhere('phone', 'like', '%'.$digitsNeedle.'%');
+            }
+
+            $query->orWhereHas('contact', function (Builder $contactQuery) use ($digitsNeedle, $needle, $phoneAttribute, $searchAttributes): void {
+                foreach ($searchAttributes as $index => $attribute) {
+                    if ($index === 0) {
+                        $contactQuery->where($attribute, 'like', '%'.$needle.'%');
+
+                        continue;
+                    }
+
+                    $contactQuery->orWhere($attribute, 'like', '%'.$needle.'%');
+                }
+
+                if ($digitsNeedle !== '') {
+                    $contactQuery->orWhere($phoneAttribute, 'like', '%'.$digitsNeedle.'%');
+                }
+            });
+        });
+    }
+
+    private function messageQuery(): ?Builder
+    {
+        $conversation = $this->activeConversation();
+
+        if ($conversation === null) {
+            return null;
+        }
+
+        $query = GreenApiMessage::query()
+            ->where('green_api_conversation_id', $conversation->getKey());
+
+        $needle = trim($this->messageSearch);
+
+        if ($needle === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($needle): void {
+            $query->where('body', 'like', '%'.$needle.'%')
+                ->orWhere('caption', 'like', '%'.$needle.'%')
+                ->orWhere('file_name', 'like', '%'.$needle.'%');
+        });
     }
 }

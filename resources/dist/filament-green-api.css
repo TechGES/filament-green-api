@@ -1,4 +1,5 @@
 .ga-plugin {
+    --ga-panel-height: min(78vh, 56rem);
     --ga-border: #dbe4ee;
     --ga-border-strong: #c4d1dd;
     --ga-surface: #ffffff;
@@ -22,6 +23,14 @@
 .ga-inbox-layout {
     display: grid;
     gap: 1.5rem;
+}
+
+.ga-inbox-layout {
+    grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
+}
+
+[x-cloak] {
+    display: none !important;
 }
 
 .ga-settings-form,
@@ -125,10 +134,6 @@
     color: rgba(236, 253, 245, 0.82);
 }
 
-.ga-sidebar {
-    min-height: 70vh;
-}
-
 .ga-sidebar-search,
 .ga-thread-header,
 .ga-thread-form {
@@ -144,6 +149,13 @@
 .ga-sidebar-search,
 .ga-thread-form {
     padding: 1rem;
+}
+
+.ga-sidebar {
+    display: flex;
+    height: var(--ga-panel-height);
+    min-height: var(--ga-panel-height);
+    flex-direction: column;
 }
 
 .ga-search-input,
@@ -182,7 +194,36 @@
 }
 
 .ga-contact-list {
-    max-height: 70vh;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+}
+
+.ga-sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--ga-border);
+    background: rgba(255, 255, 255, 0.92);
+}
+
+.ga-load-more-button {
+    width: 100%;
+    min-height: 2.75rem;
+    border: 1px solid var(--ga-border);
+    border-radius: 1rem;
+    background: var(--ga-surface-soft);
+    color: var(--ga-text);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.ga-load-more-button:hover,
+.ga-load-more-button:focus-visible {
+    outline: none;
+    border-color: rgba(16, 185, 129, 0.9);
+    color: var(--ga-success-strong);
+    background: #f8fffc;
 }
 
 .ga-contact-button {
@@ -288,7 +329,9 @@
 .ga-thread {
     display: flex;
     min-width: 0;
-    min-height: 70vh;
+    height: var(--ga-panel-height);
+    min-height: var(--ga-panel-height);
+    max-height: var(--ga-panel-height);
     flex-direction: column;
 }
 
@@ -298,9 +341,20 @@
 
 .ga-thread-header-content {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
+}
+
+.ga-thread-tools {
+    display: grid;
+    gap: 0.75rem;
+    justify-items: end;
+    min-width: min(22rem, 100%);
+}
+
+.ga-thread-search {
+    width: min(22rem, 100%);
 }
 
 .ga-thread-title,
@@ -334,7 +388,33 @@
 
 .ga-thread-body {
     flex: 1;
+    min-height: 0;
     padding: 1.5rem;
+}
+
+.ga-thread-shell {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+}
+
+.ga-thread-loader,
+.ga-thread-search-state {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.8125rem;
+}
+
+.ga-thread-loader {
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.72);
+    text-align: center;
+}
+
+.ga-thread-search-state {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(236, 253, 245, 0.88);
 }
 
 .ga-message-list {
@@ -517,6 +597,38 @@
     margin: 0;
     color: var(--ga-danger);
     font-size: 0.875rem;
+}
+
+@media (max-width: 1024px) {
+    .ga-inbox-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ga-sidebar,
+    .ga-thread {
+        height: auto;
+        min-height: 32rem;
+        max-height: none;
+    }
+
+    .ga-contact-list {
+        max-height: 28rem;
+    }
+
+    .ga-thread-header-content {
+        flex-direction: column;
+    }
+
+    .ga-thread-tools,
+    .ga-thread-search {
+        width: 100%;
+        min-width: 0;
+        justify-items: stretch;
+    }
+
+    .ga-thread-state {
+        text-align: left;
+    }
 }
 
 @media (min-width: 1024px) {

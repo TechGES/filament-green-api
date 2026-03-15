@@ -9,6 +9,7 @@ use Ges\LaravelGreenApi\Models\GreenApiConversation;
 use Ges\LaravelGreenApi\Models\GreenApiMessage;
 use Ges\LaravelGreenApi\Services\GreenApiInboxService;
 use Ges\LaravelGreenApi\Services\GreenApiService;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use RuntimeException;
 
@@ -30,6 +31,7 @@ class GreenApiInboxPageTest extends TestCase
     public function test_send_text_message_creates_an_outgoing_message_and_clears_the_input(): void
     {
         $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
+        $this->createConversation($user, '33612345678@c.us');
 
         $this->actingAs($user);
 
@@ -102,6 +104,7 @@ class GreenApiInboxPageTest extends TestCase
     public function test_send_handles_service_failures_with_a_notification(): void
     {
         $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
+        $this->createConversation($user, '33612345678@c.us');
 
         $this->actingAs($user);
 
@@ -124,12 +127,102 @@ class GreenApiInboxPageTest extends TestCase
         $this->assertSame(0, GreenApiMessage::query()->count());
     }
 
+    public function test_sidebar_lists_only_existing_conversations(): void
+    {
+        $firstUser = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
+        $secondUser = $this->createContact('John Doe', '+33 6 98 76 54 32');
+
+        $this->createConversation($firstUser, '33612345678@c.us', 'Bonjour');
+
+        $this->actingAs($firstUser);
+
+        /** @var \Illuminate\Support\Collection<int, GreenApiConversation> $conversations */
+        $conversations = Livewire::test(GreenApiInbox::class)->instance()->conversations();
+
+        $this->assertCount(1, $conversations);
+        $this->assertSame((string) $firstUser->getKey(), (string) $conversations->first()?->contact_id);
+        $this->assertNotSame((string) $secondUser->getKey(), (string) $conversations->first()?->contact_id);
+    }
+
+    public function test_thread_messages_are_lazily_loaded_and_can_load_older_entries(): void
+    {
+        $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
+        $conversation = $this->createConversation($user, '33612345678@c.us', 'Message 39');
+
+        foreach (range(0, 39) as $index) {
+            GreenApiMessage::query()->forceCreate([
+                'green_api_conversation_id' => $conversation->id,
+                'remote_message_id' => 'msg-'.$index,
+                'remote_chat_id' => $conversation->chat_id,
+                'direction' => $index % 2 === 0 ? 'incoming' : 'outgoing_api',
+                'webhook_type' => 'incomingMessageReceived',
+                'message_type' => 'textMessage',
+                'body' => 'Message '.$index,
+                'status' => 'sent',
+                'sent_at' => Carbon::parse('2026-03-15 08:00:00')->addMinutes($index),
+                'created_at' => Carbon::parse('2026-03-15 08:00:00')->addMinutes($index),
+                'updated_at' => Carbon::parse('2026-03-15 08:00:00')->addMinutes($index),
+            ]);
+        }
+
+        $this->actingAs($user);
+
+        $component = Livewire::test(GreenApiInbox::class);
+
+        /** @var \Illuminate\Support\Collection<int, GreenApiMessage> $messages */
+        $messages = $component->instance()->threadMessages();
+
+        $this->assertCount(30, $messages);
+        $this->assertSame('Message 10', $messages->first()?->body);
+        $this->assertSame('Message 39', $messages->last()?->body);
+
+        $component->call('loadOlderMessages');
+
+        /** @var \Illuminate\Support\Collection<int, GreenApiMessage> $olderMessages */
+        $olderMessages = $component->instance()->threadMessages();
+
+        $this->assertCount(40, $olderMessages);
+        $this->assertSame('Message 0', $olderMessages->first()?->body);
+        $this->assertSame('Message 39', $olderMessages->last()?->body);
+    }
+
+    public function test_new_conversation_action_selects_contact_without_validation_type_error(): void
+    {
+        $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
+
+        $this->actingAs($user);
+
+        Livewire::test(GreenApiInbox::class)
+            ->callAction('newConversation', data: [
+                'contact_id' => (string) $user->getKey(),
+            ])
+            ->assertSet('activeContactId', (string) $user->getKey())
+            ->assertNotified();
+
+        $this->assertDatabaseHas(GreenApiConversation::class, [
+            'contact_id' => (string) $user->getKey(),
+            'chat_id' => '33612345678@c.us',
+        ]);
+    }
+
     private function createContact(string $name, string $phone): User
     {
         return User::query()->create([
             'name' => $name,
             'email' => str($name)->lower()->replace(' ', '.')->append('@example.test')->toString(),
             'phone' => $phone,
+        ]);
+    }
+
+    private function createConversation(User $user, string $chatId, ?string $preview = null): GreenApiConversation
+    {
+        return GreenApiConversation::query()->create([
+            'contact_id' => (string) $user->getKey(),
+            'chat_id' => $chatId,
+            'phone' => preg_replace('/\D+/', '', $user->phone ?? '') ?: null,
+            'last_message_preview' => $preview,
+            'last_message_at' => Carbon::parse('2026-03-15 09:00:00'),
+            'unread_count' => 0,
         ]);
     }
 }
