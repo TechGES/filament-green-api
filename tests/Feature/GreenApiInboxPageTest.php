@@ -10,11 +10,49 @@ use Ges\LaravelGreenApi\Models\GreenApiMessage;
 use Ges\LaravelGreenApi\Services\GreenApiInboxService;
 use Ges\LaravelGreenApi\Services\GreenApiService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use RuntimeException;
 
 class GreenApiInboxPageTest extends TestCase
 {
+    public function test_inbox_page_allows_authenticated_user_without_ability(): void
+    {
+        $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
+
+        $this->actingAs($user);
+
+        $this->assertTrue(GreenApiInbox::canAccess());
+    }
+
+    public function test_inbox_page_checks_the_configured_ability(): void
+    {
+        $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
+
+        $this->actingAs($user);
+        config()->set('green_api_filament.whatsapp_view_ability', 'view-green-api-whatsapp');
+
+        $this->assertFalse(GreenApiInbox::canAccess());
+
+        Gate::define('view-green-api-whatsapp', fn (User $user): bool => $user->email === 'jane.doe@example.test');
+
+        $this->assertTrue(GreenApiInbox::canAccess());
+    }
+
+    public function test_inbox_page_falls_back_to_the_legacy_shared_ability(): void
+    {
+        $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
+
+        $this->actingAs($user);
+        config()->set('green_api_filament.view_ability', 'view-green-api');
+
+        $this->assertFalse(GreenApiInbox::canAccess());
+
+        Gate::define('view-green-api', fn (User $user): bool => $user->email === 'jane.doe@example.test');
+
+        $this->assertTrue(GreenApiInbox::canAccess());
+    }
+
     public function test_send_requires_a_message_or_attachment(): void
     {
         $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');

@@ -56,7 +56,11 @@ class GreenApiInbox extends Page
             return false;
         }
 
-        $ability = config('green_api_filament.view_ability');
+        $ability = config('green_api_filament.whatsapp_view_ability');
+
+        if (! is_string($ability) || $ability === '') {
+            $ability = config('green_api_filament.view_ability');
+        }
 
         if (! is_string($ability) || $ability === '') {
             return true;

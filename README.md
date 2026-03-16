@@ -80,8 +80,11 @@ The plugin publishes `config/green_api_filament.php` with:
 
 ```php
 return [
+    'config_view_ability' => null,
+    'whatsapp_view_ability' => null,
     'view_ability' => null,
 ];
 ```
 
-Set `view_ability` to a gate or permission name if access to the Green API pages should be restricted.
+Set `config_view_ability` to restrict the configuration page and `whatsapp_view_ability` to restrict the WhatsApp inbox page.
+The legacy `view_ability` key is still supported as a shared fallback for existing installs.
