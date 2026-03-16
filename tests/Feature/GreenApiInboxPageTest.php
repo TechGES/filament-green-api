@@ -30,25 +30,11 @@ class GreenApiInboxPageTest extends TestCase
         $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
 
         $this->actingAs($user);
-        config()->set('green_api_filament.whatsapp_view_ability', 'view-green-api-whatsapp');
+        config()->set('green_api_filament.pages.whatsapp.view_ability', 'view-green-api-whatsapp');
 
         $this->assertFalse(GreenApiInbox::canAccess());
 
         Gate::define('view-green-api-whatsapp', fn (User $user): bool => $user->email === 'jane.doe@example.test');
-
-        $this->assertTrue(GreenApiInbox::canAccess());
-    }
-
-    public function test_inbox_page_falls_back_to_the_legacy_shared_ability(): void
-    {
-        $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
-
-        $this->actingAs($user);
-        config()->set('green_api_filament.view_ability', 'view-green-api');
-
-        $this->assertFalse(GreenApiInbox::canAccess());
-
-        Gate::define('view-green-api', fn (User $user): bool => $user->email === 'jane.doe@example.test');
 
         $this->assertTrue(GreenApiInbox::canAccess());
     }

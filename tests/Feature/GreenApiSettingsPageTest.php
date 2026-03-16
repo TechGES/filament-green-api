@@ -28,25 +28,11 @@ class GreenApiSettingsPageTest extends TestCase
         $user = User::query()->create(['name' => 'Jane Doe', 'email' => 'jane@example.test']);
 
         $this->actingAs($user);
-        config()->set('green_api_filament.config_view_ability', 'view-green-api-settings');
+        config()->set('green_api_filament.pages.settings.view_ability', 'view-green-api-settings');
 
         $this->assertFalse(GreenApiSettings::canAccess());
 
         Gate::define('view-green-api-settings', fn (User $user): bool => $user->email === 'jane@example.test');
-
-        $this->assertTrue(GreenApiSettings::canAccess());
-    }
-
-    public function test_settings_page_falls_back_to_the_legacy_shared_ability(): void
-    {
-        $user = User::query()->create(['name' => 'Jane Doe', 'email' => 'jane@example.test']);
-
-        $this->actingAs($user);
-        config()->set('green_api_filament.view_ability', 'view-green-api');
-
-        $this->assertFalse(GreenApiSettings::canAccess());
-
-        Gate::define('view-green-api', fn (User $user): bool => $user->email === 'jane@example.test');
 
         $this->assertTrue(GreenApiSettings::canAccess());
     }

@@ -80,11 +80,22 @@ The plugin publishes `config/green_api_filament.php` with:
 
 ```php
 return [
-    'config_view_ability' => null,
-    'whatsapp_view_ability' => null,
-    'view_ability' => null,
+      'pages' => [
+        'settings' => [
+            'view_ability' => null,
+            'navigation_icon' => 'heroicon-o-cog-6-tooth',
+            'navigation_group' => 'Communication',
+            'navigation_sort' => 1,
+        ],
+        'whatsapp' => [
+            'view_ability' => null,
+            'navigation_icon' => 'heroicon-o-chat-bubble-left-right',
+            'navigation_group' => 'Communication',
+            'navigation_sort' => 2,
+        ],
+    ],
 ];
 ```
 
-Set `config_view_ability` to restrict the configuration page and `whatsapp_view_ability` to restrict the WhatsApp inbox page.
-The legacy `view_ability` key is still supported as a shared fallback for existing installs.
+Set `pages.settings.view_ability` to restrict the configuration page and `pages.whatsapp.view_ability` to restrict the WhatsApp inbox page.
+Use `pages.settings` and `pages.whatsapp` to configure each page's access, navigation icon, group, and sort order independently.

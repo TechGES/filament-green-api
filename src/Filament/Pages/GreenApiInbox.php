@@ -11,6 +11,7 @@ use Ges\LaravelGreenApi\Models\GreenApiConversation;
 use Ges\LaravelGreenApi\Models\GreenApiMessage;
 use Ges\LaravelGreenApi\Services\GreenApiInboxService;
 use Ges\LaravelGreenApi\Support\GreenApiContactManager;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -21,12 +22,6 @@ use Livewire\WithFileUploads;
 class GreenApiInbox extends Page
 {
     use WithFileUploads;
-
-    protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
-
-    protected static ?string $navigationGroup = 'Communication';
-
-    protected static ?int $navigationSort = 2;
 
     protected static ?string $title = 'WhatsApp';
 
@@ -56,17 +51,42 @@ class GreenApiInbox extends Page
             return false;
         }
 
-        $ability = config('green_api_filament.whatsapp_view_ability');
-
-        if (! is_string($ability) || $ability === '') {
-            $ability = config('green_api_filament.view_ability');
-        }
+        $ability = config('green_api_filament.pages.whatsapp.view_ability');
 
         if (! is_string($ability) || $ability === '') {
             return true;
         }
 
         return $user->can($ability);
+    }
+
+    public static function getNavigationIcon(): string | Htmlable | null
+    {
+        $icon = config('green_api_filament.pages.whatsapp.navigation_icon');
+
+        return is_string($icon) && $icon !== '' ? $icon : null;
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        $group = config('green_api_filament.pages.whatsapp.navigation_group');
+
+        return is_string($group) && $group !== '' ? $group : null;
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('green_api_filament.pages.whatsapp.navigation_sort');
+
+        if (is_int($sort)) {
+            return $sort;
+        }
+
+        if (is_numeric($sort)) {
+            return (int) $sort;
+        }
+
+        return null;
     }
 
     public function mount(): void

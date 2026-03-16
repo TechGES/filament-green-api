@@ -1,9 +1,18 @@
 <?php
 
 return [
-    'config_view_ability' => null,
-    'whatsapp_view_ability' => null,
-
-    // Legacy fallback for installs that still use one shared ability.
-    'view_ability' => null,
+    'pages' => [
+        'settings' => [
+            'view_ability' => null,
+            'navigation_icon' => 'heroicon-o-cog-6-tooth',
+            'navigation_group' => 'Communication',
+            'navigation_sort' => 1,
+        ],
+        'whatsapp' => [
+            'view_ability' => null,
+            'navigation_icon' => 'heroicon-o-chat-bubble-left-right',
+            'navigation_group' => 'Communication',
+            'navigation_sort' => 2,
+        ],
+    ],
 ];

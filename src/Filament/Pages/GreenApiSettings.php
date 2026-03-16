@@ -13,16 +13,11 @@ use Filament\Pages\Page;
 use Ges\LaravelGreenApi\Models\GreenApiConfig;
 use Ges\LaravelGreenApi\Services\GreenApiInboxService;
 use Ges\LaravelGreenApi\Services\GreenApiService;
+use Illuminate\Contracts\Support\Htmlable;
 
 class GreenApiSettings extends Page
 {
     use InteractsWithForms;
-
-    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
-
-    protected static ?string $navigationGroup = 'Communication';
-
-    protected static ?int $navigationSort = 1;
 
     protected static ?string $title = 'Green API';
 
@@ -38,17 +33,42 @@ class GreenApiSettings extends Page
             return false;
         }
 
-        $ability = config('green_api_filament.config_view_ability');
-
-        if (! is_string($ability) || $ability === '') {
-            $ability = config('green_api_filament.view_ability');
-        }
+        $ability = config('green_api_filament.pages.settings.view_ability');
 
         if (! is_string($ability) || $ability === '') {
             return true;
         }
 
         return $user->can($ability);
+    }
+
+    public static function getNavigationIcon(): string | Htmlable | null
+    {
+        $icon = config('green_api_filament.pages.settings.navigation_icon');
+
+        return is_string($icon) && $icon !== '' ? $icon : null;
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        $group = config('green_api_filament.pages.settings.navigation_group');
+
+        return is_string($group) && $group !== '' ? $group : null;
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('green_api_filament.pages.settings.navigation_sort');
+
+        if (is_int($sort)) {
+            return $sort;
+        }
+
+        if (is_numeric($sort)) {
+            return (int) $sort;
+        }
+
+        return null;
     }
 
     public function mount(GreenApiInboxService $greenApiInboxService): void
