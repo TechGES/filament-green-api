@@ -9,6 +9,7 @@ use Ges\LaravelGreenApi\Models\GreenApiConversation;
 use Ges\LaravelGreenApi\Models\GreenApiMessage;
 use Ges\LaravelGreenApi\Services\GreenApiInboxService;
 use Ges\LaravelGreenApi\Services\GreenApiService;
+use Ges\LaravelGreenApi\Support\GreenApiContactManager;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
@@ -37,6 +38,33 @@ class GreenApiInboxPageTest extends TestCase
         Gate::define('view-green-api-whatsapp', fn (User $user): bool => $user->email === 'jane.doe@example.test');
 
         $this->assertTrue(GreenApiInbox::canAccess());
+    }
+
+    public function test_new_conversation_action_notifies_when_contact_is_not_on_whatsapp(): void
+    {
+        $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
+
+        $this->actingAs($user);
+
+        $this->app->instance(
+            GreenApiInboxService::class,
+            new class(app(GreenApiService::class), app(GreenApiContactManager::class)) extends GreenApiInboxService
+            {
+                public function checkWhatsapp(\Illuminate\Database\Eloquent\Model $contact): bool
+                {
+                    return false;
+                }
+            }
+        );
+
+        Livewire::test(GreenApiInbox::class)
+            ->callAction('newConversation', data: [
+                'contact_id' => (string) $user->getKey(),
+            ])
+            ->assertSet('activeContactId', null)
+            ->assertNotified();
+
+        $this->assertDatabaseCount(GreenApiConversation::class, 0);
     }
 
     public function test_send_requires_a_message_or_attachment(): void
@@ -215,6 +243,17 @@ class GreenApiInboxPageTest extends TestCase
         $user = $this->createContact('Jane Doe', '+33 6 12 34 56 78');
 
         $this->actingAs($user);
+
+        $this->app->instance(
+            GreenApiInboxService::class,
+            new class(app(GreenApiService::class), app(GreenApiContactManager::class)) extends GreenApiInboxService
+            {
+                public function checkWhatsapp(\Illuminate\Database\Eloquent\Model $contact): bool
+                {
+                    return true;
+                }
+            }
+        );
 
         Livewire::test(GreenApiInbox::class)
             ->callAction('newConversation', data: [

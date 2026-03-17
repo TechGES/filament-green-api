@@ -114,13 +114,24 @@ class GreenApiInbox extends Page
                 ])
                 ->action(function (array $data): void {
                     $contact = app(GreenApiContactManager::class)->findOrFail($data['contact_id']);
+                    $inboxService = app(GreenApiInboxService::class);
 
-                    app(GreenApiInboxService::class)->ensureConversationForContact($contact);
+                    if (! $inboxService->checkWhatsapp($contact)) {
+                        Notification::make()
+                            ->title('WhatsApp indisponible')
+                            ->body("{$this->contactLabel($contact)} n'est pas joignable sur WhatsApp.")
+                            ->warning()
+                            ->send();
+
+                        return;
+                    }
+
+                    $inboxService->ensureConversationForContact($contact);
                     $this->activateContact($contact->getKey());
 
                     Notification::make()
-                        ->title('Conversation prete')
-                        ->body("La conversation avec {$this->contactLabel($contact)} est selectionnee.")
+                        ->title('Conversation prête')
+                        ->body("La conversation avec {$this->contactLabel($contact)} est sélectionnée.")
                         ->success()
                         ->send();
                 }),
@@ -158,7 +169,7 @@ class GreenApiInbox extends Page
 
         if ($contact === null) {
             Notification::make()
-                ->title('Aucun contact selectionne')
+                ->title('Aucun contact sélectionné')
                 ->danger()
                 ->send();
 
@@ -199,7 +210,7 @@ class GreenApiInbox extends Page
         $this->attachment = null;
 
         Notification::make()
-            ->title('Message envoye')
+            ->title('Message envoyé')
             ->success()
             ->send();
     }
